@@ -1,5 +1,4 @@
 using System.IO.Abstractions;
-using CipherNaut.Interfaces;
 using CipherNaut.Key;
 using LiteDB;
 using LiteDB.Engine;
@@ -99,7 +98,7 @@ internal class VaultImpl : IVault
         var key = new VaultKeyImpl()
         {
             KeyReference = keyReference,
-            PublicKey = PublicKey,
+            VaultPublicKey = PublicKey,
         };
         key.Wrap(keyMaterial);
         KeyCollection.Insert(key);

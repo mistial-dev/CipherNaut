@@ -1,5 +1,4 @@
 using System.IO.Abstractions;
-using CipherNaut.Interfaces;
 using CipherNaut.Vault;
 using JetBrains.Annotations;
 using Org.BouncyCastle.Crypto.Parameters;

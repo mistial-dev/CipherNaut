@@ -1,7 +1,5 @@
+using CipherNaut.Piv;
 using LiteDB;
-using Org.BouncyCastle.Crypto.Agreement;
-using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 
@@ -18,30 +16,59 @@ internal class VaultKeyImpl : IVaultKey
     public required string KeyReference { get; init; }
     
     [BsonIgnore]
-    public required ECPublicKeyParameters PublicKey { get; init; }
+    public required ECPublicKeyParameters VaultPublicKey { get; init; }
 
-    public byte[] WrappedKeyMaterial { get; internal set; } = Array.Empty<byte>();
+    /// <summary>
+    /// Ephemeral public key used for key agreement.
+    /// </summary>
+    [BsonIgnore]
+    public ECPublicKeyParameters? EphemeralPublicKey { get; private set; }
+
+    /// <summary>
+    /// Stores the wrapped key material.
+    /// </summary>
+    public byte[] WrappedKeyMaterial { get; private set; } = Array.Empty<byte>();
     
+    /// <summary>
+    /// Wraps key material using the vault public key.
+    /// </summary>
+    /// <param name="keyMaterial">Key to be wrapped</param>
+    /// <returns></returns>
     public void Wrap(byte[] keyMaterial)
     {
-        var kekBytes = new byte[256 / 8];
-        
         // Generate an ephemeral EC key pair
         var ephemeralEcKeyPair = IVaultKey.GenerateEphemeralEcKey(Random);
+        EphemeralPublicKey = (ECPublicKeyParameters)ephemeralEcKeyPair.Public;
         
         // Perform key agreement
-        var ecKeyAgreement = new ECDHBasicAgreement();
-        ecKeyAgreement.Init(ephemeralEcKeyPair.Private);
-        var sharedSecret = ecKeyAgreement.CalculateAgreement(PublicKey).ToByteArrayUnsigned();
+        var keyEncryptionKey = IVaultKey.EcKeyAgreement((ECPrivateKeyParameters)ephemeralEcKeyPair.Private, VaultPublicKey);
         
-        // Derive a key encryption key with bouncy castle using SHA-256 of the shared secret
-        var shaDigestEngine = new Sha256Digest();
-        shaDigestEngine.BlockUpdate(sharedSecret, 0, sharedSecret.Length);
-        shaDigestEngine.DoFinal(kekBytes, 0);
+        // Wrap the key material
+        WrappedKeyMaterial = IVaultKey.AesKeyWrapping(keyEncryptionKey, keyMaterial);
+    }
+
+    /// <summary>
+    /// Unwrap a key using a PIV card
+    /// </summary>
+    /// <param name="pivCard">PIV Card for unwrapping</param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public byte[] Unwrap(IPivCard pivCard)
+    {
+        if (WrappedKeyMaterial == null || WrappedKeyMaterial.Length == 0)
+        {
+            throw new InvalidOperationException("Key material is empty or null.");
+        }
+
+        if (pivCard.IsLocked)
+        {
+            throw new InvalidOperationException("PIV card must be unlocked before use.");
+        }
         
-        // Wrap the key material using bounds castle's AES key wrap implementation
-        var aesKeyWrapEngine = new AesWrapEngine();
-        aesKeyWrapEngine.Init(true, new KeyParameter(kekBytes));
-        WrappedKeyMaterial = aesKeyWrapEngine.Wrap(keyMaterial, 0, keyMaterial.Length);
+        // Perform key agreement between the PIV card and the ephemeral EC key pair
+        var keyEncryptionKey = pivCard.KeyAgreement(EphemeralPublicKey ?? throw new InvalidOperationException("Ephemeral public key is null."));
+
+        // Unwrap the key material
+        return IVaultKey.AesKeyUnwrapping(keyEncryptionKey, WrappedKeyMaterial);
     }
 }

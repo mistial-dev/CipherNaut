@@ -1,7 +1,7 @@
 using System.IO.Abstractions;
 using CipherNaut.Key;
 
-namespace CipherNaut.Interfaces;
+namespace CipherNaut.Vault;
 
 public interface IVault : IDisposable
 {

@@ -13,7 +13,7 @@ if (!Directory.Exists(vaultFolderName))
 var ephemeralKeyPair = IVaultKey.GenerateEphemeralEcKey();
 var ephemeralPublicKey = (ECPublicKeyParameters)ephemeralKeyPair.Public;
 
-var vaultFileName = Path.Combine(vaultFolderName, "vault.litedb");
+var vaultFileName = Path.Combine(vaultFolderName, "ciphernaut.litedb");
 
 using var vault = VaultFactory.Create(vaultFileName, ephemeralPublicKey);
 // Test key is a sha256 hash of the string "This is a test"
