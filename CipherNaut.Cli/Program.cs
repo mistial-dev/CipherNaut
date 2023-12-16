@@ -1,23 +1,46 @@
-﻿using CipherNaut;
-using CipherNaut.Key;
-using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Parameters;
+﻿using System.IO.Abstractions;
+using System.Threading.Channels;
+using CipherNaut.Piv;
+using Spectre.Console;
+using WSCT.Wrapper.Desktop.Core;
 
-// Create the vault if needed
+var fileSystem = new FileSystem();
 var vaultFolderName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ciphernaut");
-if (!Directory.Exists(vaultFolderName)) Directory.CreateDirectory(vaultFolderName);
+var vaultFileName = Path.Combine(vaultFolderName, "ciphernaut.db");
 
-var ephemeralKeyPair = IVaultKey.GenerateEphemeralEcKey();
-var ephemeralPublicKey = (ECPublicKeyParameters)ephemeralKeyPair.Public;
+// Load the PIV card to get the public key parameters.
+var context = new CardContext();
+context.Establish();
+context.ListReaders("YubiKey");
+var allReaders = context.Readers;
 
-var vaultFileName = Path.Combine(vaultFolderName, "ciphernaut.litedb");
+// Prompt the user to select a reader.
+var readerIndex = 0;
+switch (allReaders.Length)
+{
+    case 0:
+        Console.WriteLine("No readers found.");
+        return;
+    case 1:
+        readerIndex = 0;
+        break;
+    default:
+    {
+        // Prompt the user to select a reader.
+        var reader = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .AddChoices(allReaders)
+                .Title("Select a reader")
+        );
+        readerIndex = Array.IndexOf(allReaders, reader);
+        break;
+    }
+}
 
-using var vault = VaultFactory.Create(vaultFileName, ephemeralPublicKey);
-// Test key is a sha256 hash of the string "This is a test"
-var testInput = "This is a test"u8.ToArray();
-var testKeyHash = new Sha256Digest();
-var testKey = new byte[testKeyHash.GetDigestSize()];
-testKeyHash.BlockUpdate(testInput, 0, testInput.Length);
-testKeyHash.DoFinal(testKey, 0);
+// Connect to the reader.
+var readerName = allReaders[readerIndex];
+var channel = new CardChannel(context, readerName);
 
-vault.Create("test", testKey);
+// Create the PIV card.
+var pivCard = new PcscPivCard(channel);
+var publicKeyParameters = pivCard.PublicKeyParameters;

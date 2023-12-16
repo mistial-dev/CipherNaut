@@ -16,7 +16,9 @@
         <PackageReference Include="BouncyCastle.Cryptography" Version="2.2.1"/>
         <PackageReference Include="JetBrains.Annotations" Version="2023.3.0"/>
         <PackageReference Include="LiteDB" Version="5.0.17"/>
+        <PackageReference Include="Spectre.Console.Cli" Version="0.48.0" />
         <PackageReference Include="System.IO.Abstractions" Version="20.0.4"/>
+        <PackageReference Include="WSCT.Wrapper.Desktop" Version="1.4.0" />
     </ItemGroup>
 
 </Project>
