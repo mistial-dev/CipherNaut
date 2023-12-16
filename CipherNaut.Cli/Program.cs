@@ -5,10 +5,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 
 // Create the vault if needed
 var vaultFolderName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ciphernaut");
-if (!Directory.Exists(vaultFolderName))
-{
-    Directory.CreateDirectory(vaultFolderName);
-}
+if (!Directory.Exists(vaultFolderName)) Directory.CreateDirectory(vaultFolderName);
 
 var ephemeralKeyPair = IVaultKey.GenerateEphemeralEcKey();
 var ephemeralPublicKey = (ECPublicKeyParameters)ephemeralKeyPair.Public;

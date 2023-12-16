@@ -11,22 +11,27 @@ public static class VaultFactory
     public static IVault Create(string fileName, ECPublicKeyParameters? publicKey = null)
     {
         var filesystem = new FileSystem();
-        return new VaultImpl()
+        var vault = new VaultImpl()
         {
             FileSystem = filesystem,
             FileName = fileName,
             PublicKey = publicKey
         };
+        vault.Initialize();
+        return vault;
     }
-    
+
     [PublicAPI]
     public static IVault Create(IFileSystem filesystem, string fileName, ECPublicKeyParameters? publicKey = null)
     {
-            return new VaultImpl()
-            {
-                FileSystem = filesystem,
-                FileName = fileName,
-                PublicKey = publicKey
-            };
+        var vault = new VaultImpl()
+        {
+            FileSystem = filesystem,
+            FileName = fileName,
+            PublicKey = publicKey
+        };
+        vault.Initialize();
+
+        return vault;
     }
 }

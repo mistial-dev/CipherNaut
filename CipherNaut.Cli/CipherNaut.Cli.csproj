@@ -8,17 +8,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\CipherNaut\CipherNaut.csproj" />
+        <ProjectReference Include="..\CipherNaut\CipherNaut.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="System.IO.Abstractions" Version="20.0.4" />
+        <PackageReference Include="System.IO.Abstractions" Version="20.0.4"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="data\testkey-prime256v1.pem">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+        <None Update="data\testkey-prime256v1.pem">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

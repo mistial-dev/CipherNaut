@@ -10,13 +10,13 @@ module (HSM).
 
 ## How do I use it?
 
-CipherNaut stores keys in a database.  Key references are loaded using a Key Reference, or name.  This reference is
+CipherNaut stores keys in a database. Key references are loaded using a Key Reference, or name. This reference is
 unique per key, and is used to load the key from the database.
 
-Keys are unwrapped at time of use using CipherNaut's `UnwrapKey` method.  This method takes a key reference and a PIV
-token, and returns the unwrapped key material.  The PIV token must already be unlocked, or the operation will fail.
+Keys are unwrapped at time of use using CipherNaut's `UnwrapKey` method. This method takes a key reference and a PIV
+token, and returns the unwrapped key material. The PIV token must already be unlocked, or the operation will fail.
 
-Adding a key to CipherNaut is done via the `AddKey` method.  This method takes a key reference, and a public key.
+Adding a key to CipherNaut is done via the `AddKey` method. This method takes a key reference, and a public key.
 
 ## How does it work?
 

@@ -15,7 +15,8 @@ public class VaultTest
     /// <summary>
     /// Test AES-128 key
     /// </summary>
-    private readonly byte[] _testAes128Key = {
+    private readonly byte[] _testAes128Key =
+    {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
         0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B,
         0x0C, 0x0D, 0x0E, 0x0F
@@ -24,7 +25,8 @@ public class VaultTest
     /// <summary>
     /// Test AES-256 key
     /// </summary>
-    private readonly byte[] _testAes256Key = {
+    private readonly byte[] _testAes256Key =
+    {
         0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
         0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C,
         0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12,
@@ -44,12 +46,12 @@ public class VaultTest
     /// Key reference for the test AES-128 key
     /// </summary>
     private const string TestAes128KeyReference = "test-aes128";
-    
+
     /// <summary>
     /// Key reference for the test AES-256 key
     /// </summary>
     private const string TestAes256KeyReference = "test-aes256";
-    
+
     /// <summary>
     /// Key reference for the odd length test key
     /// </summary>
@@ -69,16 +71,16 @@ public class VaultTest
     /// Vault instance
     /// </summary>
     private IVault? _vault;
-    
+
     /// <summary>
     /// Mock PIV card
     /// </summary>
     private IPivCard? _pivCard;
-    
+
     // Path to the public and private key file
     private const string VaultKeyFile = @"c:\keys\testkey1-prime256v1.pem";
     private const string TestKeyFile = @"c:\keys\testkey2-prime256v1.pem";
-    
+
     /// <summary>
     /// Set up the test environment
     /// </summary>
@@ -104,7 +106,7 @@ public class VaultTest
         _publicKey = _pivCard.PublicKeyParameters;
 
         // Instantiate the vault.
-        _vault = VaultFactory.Create(_fileSystem, "ciphernaut.litedb", _publicKey);
+        _vault = VaultFactory.Create(_fileSystem, "ciphernaut.db", _publicKey);
     }
 
     /// <summary>
@@ -118,7 +120,7 @@ public class VaultTest
         var firstKey = (AsymmetricCipherKeyPair)pemReader.ReadObject();
         pemReader = new PemReader(new StringReader(_fileSystem.File.ReadAllText(TestKeyFile)));
         var secondKey = (AsymmetricCipherKeyPair)pemReader.ReadObject();
-        
+
         // Extract the public and private keys from the key pairs
         var firstPrivateKey = (ECPrivateKeyParameters)firstKey.Private;
         var firstPublicKey = (ECPublicKeyParameters)firstKey.Public;
@@ -128,23 +130,22 @@ public class VaultTest
         // Perform key agreement
         var firstSharedSecret = IVaultKey.EcKeyAgreement(firstPrivateKey, secondPublicKey);
         var secondSharedSecret = IVaultKey.EcKeyAgreement(secondPrivateKey, firstPublicKey);
-        
+
         // Compare the shared secrets
         Assert.That(firstSharedSecret, Is.EqualTo(secondSharedSecret));
-
     }
 
     /// <summary>
     /// Test key wrapping
     /// </summary>
     [Test]
-    public void TestKeyWrapping ()
+    public void TestKeyWrapping()
     {
         // Wrap the test key and store it in the vault.
         var testKey1 = _vault!.Create(TestAes128KeyReference, _testAes128Key);
         var testKey2 = _vault!.Create(TestAes256KeyReference, _testAes256Key);
         var testKey3 = _vault!.Create(TestOddLengthKeyReference, _testOddLengthKey);
-        
+
         // Retrieve the keys from the vault.
         var retrievedKey = testKey1.Unwrap(_pivCard!);
         var retrievedKey2 = testKey2.Unwrap(_pivCard!);
@@ -157,5 +158,22 @@ public class VaultTest
             Assert.That(retrievedKey2, Is.EqualTo(_testAes256Key));
             Assert.That(retrievedKey3, Is.EqualTo(_testOddLengthKey));
         });
+    }
+
+    /// <summary>
+    /// Ensure that the vault saves the public key when it is created, and that it is restored when the vault is reloaded.
+    /// </summary>
+    [Test]
+    public void TestKeyRetention()
+    {
+        // Create a new vault
+        var mockFileSystem = new MockFileSystem(new Dictionary<string, MockFileData>());
+
+        var vault = VaultFactory.Create(mockFileSystem, "ciphernaut.db", _publicKey);
+        vault.Dispose();
+        vault = VaultFactory.Create(mockFileSystem, "ciphernaut.db");
+
+        // Ensure that the vault contains the public key
+        Assert.That(vault.PublicKey!.Q.GetEncoded(), Is.EqualTo(_publicKey!.Q.GetEncoded()));
     }
 }
